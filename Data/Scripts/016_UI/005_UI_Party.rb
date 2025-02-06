@@ -139,7 +139,7 @@ class PokemonPartyBlankPanel < Sprite
   def initialize(_pokemon, index, viewport = nil)
     super(viewport)
     self.x = (index % 2) * Graphics.width / 2
-    self.y = (16 * (index % 2)) + (96 * (index / 2))
+    self.y = (8 * (index % 2)) + (96 * (index / 2))
     @panelbgsprite = AnimatedBitmap.new("Graphics/UI/Party/panel_blank")
     self.bitmap = @panelbgsprite.bitmap
     @text = nil
@@ -182,26 +182,16 @@ class PokemonPartyPanel < Sprite
     @active = (index == 0)   # true = rounded panel, false = rectangular panel
     @refreshing = true
     self.x = (index % 2) * Graphics.width / 2
-    self.y = (16 * (index % 2)) + (96 * (index / 2))
+    self.y = (0 * (index % 2)) + (96 * (index / 2))
     @panelbgsprite = ChangelingSprite.new(0, 0, viewport)
     @panelbgsprite.z = self.z
-    if @active   # Rounded panel
-      @panelbgsprite.addBitmap("able", "Graphics/UI/Party/panel_round")
-      @panelbgsprite.addBitmap("ablesel", "Graphics/UI/Party/panel_round_sel")
-      @panelbgsprite.addBitmap("fainted", "Graphics/UI/Party/panel_round_faint")
-      @panelbgsprite.addBitmap("faintedsel", "Graphics/UI/Party/panel_round_faint_sel")
-      @panelbgsprite.addBitmap("swap", "Graphics/UI/Party/panel_round_swap")
-      @panelbgsprite.addBitmap("swapsel", "Graphics/UI/Party/panel_round_swap_sel")
-      @panelbgsprite.addBitmap("swapsel2", "Graphics/UI/Party/panel_round_swap_sel2")
-    else   # Rectangular panel
-      @panelbgsprite.addBitmap("able", "Graphics/UI/Party/panel_rect")
-      @panelbgsprite.addBitmap("ablesel", "Graphics/UI/Party/panel_rect_sel")
-      @panelbgsprite.addBitmap("fainted", "Graphics/UI/Party/panel_rect_faint")
-      @panelbgsprite.addBitmap("faintedsel", "Graphics/UI/Party/panel_rect_faint_sel")
-      @panelbgsprite.addBitmap("swap", "Graphics/UI/Party/panel_rect_swap")
-      @panelbgsprite.addBitmap("swapsel", "Graphics/UI/Party/panel_rect_swap_sel")
-      @panelbgsprite.addBitmap("swapsel2", "Graphics/UI/Party/panel_rect_swap_sel2")
-    end
+    @panelbgsprite.addBitmap("able", "Graphics/UI/Party/panel_rect")
+    @panelbgsprite.addBitmap("ablesel", "Graphics/UI/Party/panel_rect_sel")
+    @panelbgsprite.addBitmap("fainted", "Graphics/UI/Party/panel_rect_faint")
+    @panelbgsprite.addBitmap("faintedsel", "Graphics/UI/Party/panel_rect_faint_sel")
+    @panelbgsprite.addBitmap("swap", "Graphics/UI/Party/panel_rect_swap")
+    @panelbgsprite.addBitmap("swapsel", "Graphics/UI/Party/panel_rect_swap_sel")
+    @panelbgsprite.addBitmap("swapsel2", "Graphics/UI/Party/panel_rect_swap_sel2")
     @hpbgsprite = ChangelingSprite.new(0, 0, viewport)
     @hpbgsprite.z = self.z + 1
     @hpbgsprite.addBitmap("able", _INTL("Graphics/UI/Party/overlay_hp_back"))
@@ -222,6 +212,7 @@ class PokemonPartyPanel < Sprite
     pbSetSystemFont(@overlaysprite.bitmap)
     @hpbar    = AnimatedBitmap.new("Graphics/UI/Party/overlay_hp")
     @statuses = AnimatedBitmap.new(_INTL("Graphics/UI/statuses"))
+    @numbersBitmap = AnimatedBitmap.new("Graphics/UI/Party/icon_numbers")
     @selected      = false
     @preselected   = false
     @switching     = false
@@ -230,6 +221,18 @@ class PokemonPartyPanel < Sprite
     @refreshing    = false
     refresh
   end
+
+  def pbDrawNumber(number, btmp, startX, startY, align = 0)
+    n = (number == -1) ? [10] : number.to_i.digits.reverse
+    charWidth  = @numbersBitmap.width / 11
+    charHeight = @numbersBitmap.height
+    startX -= charWidth * n.length if align == 1
+    n.each do |i|
+      btmp.blt(startX, startY, @numbersBitmap.bitmap, Rect.new(i * charWidth, 0, charWidth, charHeight))
+      startX += charWidth
+    end
+  end
+
 
   def dispose
     @panelbgsprite.dispose
@@ -241,6 +244,7 @@ class PokemonPartyPanel < Sprite
     @overlaysprite.dispose
     @hpbar.dispose
     @statuses.dispose
+    @numbersBitmap.dispose
     super
   end
 
@@ -383,8 +387,7 @@ class PokemonPartyPanel < Sprite
                          [[_INTL("Graphics/UI/Party/overlay_lv"), 20, 70, 0, 0, 22, 14]])
     # Level number
     pbSetSmallFont(@overlaysprite.bitmap)
-    pbDrawTextPositions(@overlaysprite.bitmap,
-                        [[@pokemon.level.to_s, 42, 68, :left, TEXT_BASE_COLOR, TEXT_SHADOW_COLOR]])
+    pbDrawNumber(@pokemon.level.to_s, @overlaysprite.bitmap, 42, 70)
     pbSetSystemFont(@overlaysprite.bitmap)
   end
 
@@ -400,9 +403,9 @@ class PokemonPartyPanel < Sprite
   def draw_hp
     return if @pokemon.egg? || (@text && @text.length > 0)
     # HP numbers
-    hp_text = sprintf("% 3d /% 3d", @pokemon.hp, @pokemon.totalhp)
-    pbDrawTextPositions(@overlaysprite.bitmap,
-                        [[hp_text, 224, 66, :right, TEXT_BASE_COLOR, TEXT_SHADOW_COLOR]])
+    pbDrawNumber(@pokemon.hp, @overlaysprite.bitmap, 224-50, 70, 1)
+    pbDrawNumber(-1, @overlaysprite.bitmap, 224-50, 70)   # / char
+    pbDrawNumber(@pokemon.totalhp, @overlaysprite.bitmap, 224 + 16 - 50, 70)
     # HP bar
     if @pokemon.able?
       w = @pokemon.hp * HP_BAR_WIDTH / @pokemon.totalhp.to_f
@@ -490,6 +493,8 @@ class PokemonParty_Scene
     @sprites["messagebox"].visible        = false
     @sprites["messagebox"].letterbyletter = true
     pbBottomLeftLines(@sprites["messagebox"], 2)
+    skinfile = MessageConfig.pbGetSpeechFrame
+    @sprites["messagebox"].setSkin(skinfile)
     @sprites["storagetext"] = Window_UnformattedTextPokemon.new(
       @can_access_storage ? _INTL("[Special]: To Boxes") : ""
     )
@@ -1039,7 +1044,7 @@ class PokemonPartyScreen
     annot = []
     @party.each do |pkmn|
       elig = ableProc.call(pkmn)
-      annot.push((elig) ? _INTL("ABLE") : _INTL("NOT ABLE"))
+      annot.push((elig) ? _INTL("ABLE!") : _INTL("NOT ABLE"))
     end
     @scene.pbAnnotate(annot)
   end
