@@ -15,6 +15,7 @@ class Battle::Scene
     ret = pbCommandMenuEx(idxBattler, cmds, (shadowTrainer) ? 2 : (firstAction) ? 0 : 1)
     ret = 4 if ret == 3 && shadowTrainer   # Convert "Run" to "Call"
     ret = -1 if ret == 3 && !firstAction   # Convert "Run" to "Cancel"
+    cm = @sprites["commandWindow"]
     return ret
   end
 
@@ -46,6 +47,7 @@ class Battle::Scene
       pbPlayCursorSE if cw.index != oldIndex
       # Actions
       if Input.trigger?(Input::USE)                 # Confirm choice
+        cw.animate
         pbPlayDecisionSE
         ret = cw.index
         @lastCmd[idxBattler] = ret
@@ -68,6 +70,7 @@ class Battle::Scene
   def pbFightMenu(idxBattler, megaEvoPossible = false)
     battler = @battle.battlers[idxBattler]
     cw = @sprites["fightWindow"]
+    cm = @sprites["commandWindow"]
     cw.battler = battler
     moveIndex = 0
     if battler.moves[@lastMove[idxBattler]]&.id
@@ -107,6 +110,7 @@ class Battle::Scene
       pbPlayCursorSE if cw.index != oldIndex
       # Actions
       if Input.trigger?(Input::USE)      # Confirm choice
+        cw.animate
         pbPlayDecisionSE
         break if yield cw.index
         needFullRefresh = true
@@ -186,6 +190,7 @@ class Battle::Scene
     end
     # Close party screen
     switchScreen.pbEndScene
+    cm = @sprites["commandWindow"]
     # Fade back into battle screen
     pbFadeInAndShow(@sprites, visibleSprites)
   end
@@ -319,6 +324,7 @@ class Battle::Scene
     $bag.last_pocket_selections = oldChoices
     # Close Bag screen
     itemScene.pbEndScene
+    cm = @sprites["commandWindow"]
     # Fade back into battle screen (if not already showing it)
     pbFadeInAndShow(@sprites, visibleSprites) if !wasTargeting
   end

@@ -18,11 +18,11 @@ class Battle::Scene::PokemonDataBox < Sprite
   # Height in pixels of a status icon
   STATUS_ICON_HEIGHT = 16
   # Text colors
-  NAME_BASE_COLOR         = Color.new(72, 72, 72)
-  NAME_SHADOW_COLOR       = Color.new(184, 184, 184)
-  MALE_BASE_COLOR         = Color.new(48, 96, 216)
+  NAME_BASE_COLOR         = Color.new(64, 48, 40)
+  NAME_SHADOW_COLOR       = Color.new(160, 168, 144)
+  MALE_BASE_COLOR         = Color.new(0, 156, 156)
   MALE_SHADOW_COLOR       = NAME_SHADOW_COLOR
-  FEMALE_BASE_COLOR       = Color.new(248, 88, 40)
+  FEMALE_BASE_COLOR       = Color.new(248, 72, 56)
   FEMALE_SHADOW_COLOR     = NAME_SHADOW_COLOR
 
   def initialize(battler, sideSize, viewport = nil)
@@ -41,7 +41,8 @@ class Battle::Scene::PokemonDataBox < Sprite
   end
 
   def initializeDataBoxGraphic(sideSize)
-    onPlayerSide = @battler.index.even?
+    @sideSize = sideSize
+    onPlayerSide = @battler.index.even? # this exists ????? Why isn't it used everywhere
     # Get the data box graphic and set whether the HP numbers/Exp bar are shown
     if sideSize == 1   # One Pokémon on side, use the regular dara box BG
       bgFilename = [_INTL("Graphics/UI/Battle/databox_normal"),
@@ -56,15 +57,17 @@ class Battle::Scene::PokemonDataBox < Sprite
     end
     @databoxBitmap&.dispose
     @databoxBitmap = AnimatedBitmap.new(bgFilename)
-    # Determine the co-ordinates of the data box and the left edge padding width
     if onPlayerSide
-      @spriteX = Graphics.width - 244
+      @spriteX = Graphics.width - 212 - 32 - 16
       @spriteY = Graphics.height - 192
       @spriteBaseX = 34
     else
       @spriteX = -16
       @spriteY = 36
       @spriteBaseX = 16
+      if sideSize == 2
+        @spriteX -= 34
+      end
     end
     case sideSize
     when 2
@@ -114,17 +117,41 @@ class Battle::Scene::PokemonDataBox < Sprite
 
   def x=(value)
     super
-    @hpBar.x     = value + @spriteBaseX + 102
-    @expBar.x    = value + @spriteBaseX + 6
-    @hpNumbers.x = value + @spriteBaseX + 80
+    base_x = value + @spriteBaseX
+
+    # Default HP Bar X
+    @hpBar.x = base_x + 102 - 26 + 2
+
+    # Adjust for foe's bar in double battles
+    @hpBar.x += 34 if @sideSize != 1 && !@battler.index.even?
+
+    # Adjust for foe's bar in single battles (this is so tedious)
+    @hpBar.x += 14 if @sideSize == 1 && !@battler.index.even?
+
+    @expBar.x = base_x + 6 + 24
+    @hpNumbers.x = base_x + 80
   end
 
   def y=(value)
     super
-    @hpBar.y     = value + 40
-    @expBar.y    = value + 74
-    @hpNumbers.y = value + 52
+    base_y = value
+
+    # Default HP Bar Y
+    @hpBar.y = base_y + 40 + 4
+    @hpBar.y = base_y - 2 if @sideSize != 1 # Adjust for double battles
+
+    # Adjust for foe's HP bar
+    @hpBar.y = base_y + 40 + 2 if !@battler.index.even?
+    @hpBar.y = base_y + 40 + 4 if !@battler.index.even? && @sideSize != 1
+
+    # Adjust for player's HP bar in double battles
+    @hpBar.y += 44 if @sideSize != 1 && @battler.index.even?
+
+    @expBar.y = base_y + 74 + 4
+    @hpNumbers.y = base_y + 52 + 4
   end
+
+
 
   def z=(value)
     super
@@ -220,46 +247,111 @@ class Battle::Scene::PokemonDataBox < Sprite
   end
 
   def draw_name
-    nameWidth = self.bitmap.text_size(@battler.name).width
+        nameWidth = self.bitmap.text_size(@battler.name).width
     nameOffset = 0
     nameOffset = nameWidth - 116 if nameWidth > 116
-    pbDrawTextPositions(self.bitmap, [[@battler.name, @spriteBaseX + 8 - nameOffset, 12, :left,
-                                       NAME_BASE_COLOR, NAME_SHADOW_COLOR]]
-    )
+    x_fix = 0
+
+    if !@battler.index.even? && @sideSize == 2
+      x_fix += 34
+    end
+
+    if @sideSize == 1
+      name_x = (@battler.opposes?(0)) ? @spriteBaseX + 8 + 2 - nameOffset + x_fix : @spriteBaseX + 8 + 8 - nameOffset + x_fix # foe/player
+      name_y = (@battler.opposes?(0)) ? 12 : 14
+    else
+      name_x = (@battler.opposes?(0)) ? @spriteBaseX + 8 + 2 - nameOffset + x_fix : @spriteBaseX + 8 + 8 - nameOffset + x_fix # foe/player
+      name_y = (@battler.opposes?(0)) ? 12 : 14
+    end
+    pbDrawTextPositions(self.bitmap, [[@battler.name, name_x, name_y, :left, NAME_BASE_COLOR, NAME_SHADOW_COLOR]])
   end
 
+
   def draw_level
-    # "Lv" graphic
-    pbDrawImagePositions(self.bitmap, [[_INTL("Graphics/UI/Battle/overlay_lv"), @spriteBaseX + 140, 16]])
-    # Level number
-    pbDrawNumber(@battler.level, self.bitmap, @spriteBaseX + 162, 16)
+    return if @battler.status != :NONE && @sideSize == 2
+
+    onPlayerSide = @battler.index.even?
+    y_fix = 0
+    y_fix = 2 if !@battler.opposes?(0)
+    x_fix = 0
+
+    if !onPlayerSide && @sideSize == 2
+      x_fix += 34
+    end
+
+    pbDrawImagePositions(self.bitmap, [[_INTL("Graphics/UI/Battle/overlay_lv"), @spriteBaseX + 140 + 24 + 2 + x_fix, 16 + y_fix]])
+
+    pbDrawNumber(@battler.level, self.bitmap, @spriteBaseX + 162 + 24 + 2 + x_fix, 16 + y_fix)
   end
+
+
 
   def draw_gender
     gender = @battler.displayGender
     return if ![0, 1].include?(gender)
-    gender_text  = (gender == 0) ? _INTL("♂") : _INTL("♀")
-    base_color   = (gender == 0) ? MALE_BASE_COLOR : FEMALE_BASE_COLOR
+
+    gender_text = (gender == 0) ? _INTL("♂") : _INTL("♀")
+    base_color = (gender == 0) ? MALE_BASE_COLOR : FEMALE_BASE_COLOR
     shadow_color = (gender == 0) ? MALE_SHADOW_COLOR : FEMALE_SHADOW_COLOR
-    pbDrawTextPositions(self.bitmap, [[gender_text, @spriteBaseX + 126, 12, :left, base_color, shadow_color]])
+
+    nameWidth = self.bitmap.text_size(@battler.name).width
+    nameOffset = 0
+    nameOffset = nameWidth - 116 if nameWidth > 116
+    x_fix = 0
+
+    if !@battler.index.even? && @sideSize == 2
+      x_fix += 34
+    end
+
+    gender_x = (@battler.opposes?(0)) ? @spriteBaseX + 8 + 2 - nameOffset + 2 + nameWidth + x_fix : @spriteBaseX + 8 + 8 - nameOffset + 2 + nameWidth + x_fix
+    gender_y = (@battler.opposes?(0)) ? 12 : 14
+
+    pbDrawTextPositions(self.bitmap, [[gender_text, gender_x, gender_y, :left, base_color, shadow_color]])
   end
+
+
 
   def draw_status
     return if @battler.status == :NONE
-    if @battler.status == :POISON && @battler.statusCount > 0   # Badly poisoned
+
+    if @battler.status == :POISON && @battler.statusCount > 0
       s = GameData::Status.count - 1
     else
       s = GameData::Status.get(@battler.status).icon_position
     end
     return if s < 0
-    pbDrawImagePositions(self.bitmap, [[_INTL("Graphics/UI/Battle/icon_statuses"), @spriteBaseX + 24, 36,
+
+    x_fix = 0
+    y_fix = 0
+
+    if @sideSize == 2
+      if @battler.index.even?  # Player side in double battle
+        x_fix = 140+56
+        y_fix = -16-22
+      else
+        x_fix = 224
+        y_fix = -16-6
+      end
+    end
+
+    if @sideSize == 1
+      x_fix = 24 if !@battler.index.even?
+      x_fix = 40 if @battler.index.even? # man I hate this
+    end
+
+    status_x = (@battler.opposes?(0)) ? @spriteBaseX + x_fix - 16 : @spriteBaseX + x_fix - 16
+    status_y = (@battler.opposes?(0)) ? 28 + 10 + y_fix : 26 + 14 + 16 + y_fix
+
+    pbDrawImagePositions(self.bitmap, [[_INTL("Graphics/UI/Battle/icon_statuses"), status_x, status_y,
                                         0, s * STATUS_ICON_HEIGHT, -1, STATUS_ICON_HEIGHT]])
   end
 
-  def draw_shiny_icon
-    return if !@battler.shiny?
-    shiny_x = (@battler.opposes?(0)) ? 206 : -6   # Foe's/player's
-    pbDrawImagePositions(self.bitmap, [["Graphics/UI/shiny", @spriteBaseX + shiny_x, 36]])
+
+
+
+
+  def draw_shiny_icon # never draw, core games don't even do it
+    return
   end
 
   def draw_special_form_icon
@@ -280,7 +372,7 @@ class Battle::Scene::PokemonDataBox < Sprite
 
   def draw_owned_icon
     return if !@battler.owned? || !@battler.opposes?(0)   # Draw for foe Pokémon only
-    pbDrawImagePositions(self.bitmap, [["Graphics/UI/Battle/icon_own", @spriteBaseX + 8, 36]])
+    pbDrawImagePositions(self.bitmap, [["Graphics/UI/Battle/icon_own", @spriteBaseX + 8 + 124, 36 - 20]])
   end
 
   def refresh

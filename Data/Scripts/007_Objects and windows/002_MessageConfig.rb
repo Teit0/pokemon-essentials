@@ -4,8 +4,8 @@
 module MessageConfig
   LIGHT_TEXT_MAIN_COLOR    = Color.new(248, 248, 248)
   LIGHT_TEXT_SHADOW_COLOR  = Color.new(72, 80, 88)
-  DARK_TEXT_MAIN_COLOR     = Color.new(80, 80, 88)
-  DARK_TEXT_SHADOW_COLOR   = Color.new(160, 160, 168)
+  DARK_TEXT_MAIN_COLOR     = Color.new(82, 82, 90)
+  DARK_TEXT_SHADOW_COLOR   = Color.new(165, 165, 173)
   MALE_TEXT_MAIN_COLOR     = Color.new(48, 80, 200)   # Used by message tag "\b"
   MALE_TEXT_SHADOW_COLOR   = Color.new(208, 208, 200)
   FEMALE_TEXT_MAIN_COLOR   = Color.new(224, 8, 8)   # Used by message tag "\r"
@@ -336,7 +336,7 @@ def getSkinColor(windowskin, color, isDarkSkin)
     # Base color, shadow color (these are reversed on dark windowskins)
     # Values in arrays are RGB numbers
     textcolors = [
-      [  0, 112, 248], [120, 184, 232],   # 1  Blue
+      [248,  64,   0], [248, 160, 160],   # 1  Blue
       [232,  32,  16], [248, 168, 184],   # 2  Red
       [ 96, 176,  72], [174, 208, 144],   # 3  Green
       [ 72, 216, 216], [168, 224, 224],   # 4  Cyan

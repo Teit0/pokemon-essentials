@@ -135,14 +135,17 @@ class Battle::Scene::CommandMenu < Battle::Scene::MenuBase
         button = Sprite.new(viewport)
         button.bitmap = @buttonBitmap.bitmap
         button.x = self.x + Graphics.width - 260
-        button.x += (i.even? ? 0 : (@buttonBitmap.width / 2) - 4)
+        button.x += (i.even? ? -6 : (@buttonBitmap.width / 2) - 4 - 2)  # Adjusted X values (-6 for 0 and 2, -2 for 1 and 3)
         button.y = self.y + 6
         button.y += (((i / 2) == 0) ? 0 : BUTTON_HEIGHT - 4)
+        button.y += (i >= 2 ? 2 : 0)  # Adjust Y values for buttons 2 and 3
         button.src_rect.width  = @buttonBitmap.width / 2
         button.src_rect.height = BUTTON_HEIGHT
         addSprite("button_#{i}", button)
         next button
       end
+
+
     else
       # Create command window (shows Fight/Bag/Pokémon/Run)
       @cmdWindow = Window_CommandPokemon.newWithSize(
@@ -154,7 +157,55 @@ class Battle::Scene::CommandMenu < Battle::Scene::MenuBase
       addSprite("cmdWindow", @cmdWindow)
     end
     self.z = z
+    @time = 0
+    @cursor_sprite = IconSprite.new(self.x, self.y, viewport)
+    @cursor_sprite.setBitmap("Graphics/UI/Battle/handy")  # Replace with the actual animation bitmap
+    @cursor_sprite.x = self.x + Graphics.width - 260 - 22  # Initial position
+    @cursor_sprite.y = self.y + 6 - 11 * 2
+    @cursor_sprite.src_rect.width = @buttonBitmap.width / 2
+    @cursor_sprite.src_rect.height = BUTTON_HEIGHT
+    @cursor_sprite.z = self.z + 3  # Z-coordinate
+    addSprite("cursor_sprite", @cursor_sprite)
     refresh
+  end
+
+  def animate
+    selected_button = @buttons[@index]
+    # Update the src_rect.x instantly
+    @buttons[@index].src_rect.x = @buttonBitmap.width / 2
+    # Update the cursor sprite position instantly
+    @cursor_sprite.y = selected_button.y - 16
+    # Wait for a few frames to allow other code to execute
+    pbWait(0.1)  # Adjust the number of frames as needed
+    # Update the src_rect.x instantly
+    @buttons[@index].src_rect.x = 0
+    # Update the cursor sprite position instantly
+    @cursor_sprite.y = selected_button.y - 22
+    pbWait(0.05)
+  end
+
+  def refreshButtons
+    return if !USE_GRAPHICS
+    @buttons.each_with_index do |button, i|
+      button.src_rect.x = 0
+      button.src_rect.y = MODES[@mode][i] * BUTTON_HEIGHT
+    end
+    updateCursorSpritePosition
+  end
+
+  def update
+    super
+    updateCursorSpritePosition
+  end
+
+  def updateCursorSpritePosition
+    selected_button = @buttons[@index]
+    @cursor_sprite.x = selected_button.x - 22
+    amplitude = 8
+    frequency = 0.12
+    raw_y = selected_button.y + amplitude * Math.sin(@time * frequency)
+    @cursor_sprite.y = raw_y + (2 - raw_y % 2) - 32
+    @time += 1
   end
 
   def dispose
@@ -177,13 +228,13 @@ class Battle::Scene::CommandMenu < Battle::Scene::MenuBase
   end
 
   def refreshButtons
-    return if !USE_GRAPHICS
-    @buttons.each_with_index do |button, i|
-      button.src_rect.x = (i == @index) ? @buttonBitmap.width / 2 : 0
-      button.src_rect.y = MODES[@mode][i] * BUTTON_HEIGHT
-      button.z          = self.z + ((i == @index) ? 3 : 2)
-    end
-  end
+   return if !USE_GRAPHICS
+   @buttons.each_with_index do |button, i|
+     button.src_rect.x = 0
+     button.src_rect.y = MODES[@mode][i] * BUTTON_HEIGHT
+   end
+   updateCursorSpritePosition
+ end
 
   def refresh
     @msgBox.refresh
@@ -214,7 +265,7 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
     Color.new(248, 72, 72), Color.new(136, 48, 48),    # Red, zero PP
     Color.new(248, 136, 32), Color.new(144, 72, 24),   # Orange, 1/4 of total PP or less
     Color.new(248, 192, 0), Color.new(144, 104, 0),    # Yellow, 1/2 of total PP or less
-    TEXT_BASE_COLOR, TEXT_SHADOW_COLOR                 # Black, more than 1/2 of total PP
+    TEXT_BASE_COLOR, TEXT_SHADOW_COLOR      # Black, more than 1/2 of total PP
   ]
 
   def initialize(viewport, z)
@@ -239,8 +290,8 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
       @buttons = Array.new(Pokemon::MAX_MOVES) do |i|
         button = Sprite.new(viewport)
         button.bitmap = @buttonBitmap.bitmap
-        button.x = self.x + 4
-        button.x += (i.even? ? 0 : (@buttonBitmap.width / 2) - 4)
+        button.x = self.x + 2
+        button.x += (i.even? ? 0 : (@buttonBitmap.width / 2))
         button.y = self.y + 6
         button.y += (((i / 2) == 0) ? 0 : BUTTON_HEIGHT - 4)
         button.src_rect.width  = @buttonBitmap.width / 2
@@ -299,7 +350,38 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
       pbSetNarrowFont(@cmdWindow.contents)
       addSprite("cmdWindow", @cmdWindow)
     end
+    @cursor_sprite = IconSprite.new(self.x, self.y, viewport)
+    @cursor_sprite.setBitmap("Graphics/UI/Battle/handy")  # Replace with the actual animation bitmap
+    @cursor_sprite.x = self.x + 4 - 12  # Initial position
+    @cursor_sprite.y = self.y + 6 + 14 - 10
+    @cursor_sprite.src_rect.width = @buttonBitmap.width / 2
+    @cursor_sprite.src_rect.height = BUTTON_HEIGHT
+    @cursor_sprite.z = self.z + 3  # Z-coordinate
+    addSprite("cursor_sprite", @cursor_sprite)
+    @time = 0
     self.z = z
+  end
+
+  def update
+    super
+    updateCursorSpritePosition
+  end
+
+  def animate
+    selected_button = @buttons[@index]
+    # Update the src_rect.x instantly
+    @buttons[@index].src_rect.x = @buttonBitmap.width / 2
+    # Update the cursor sprite position instantly
+    @cursor_sprite.y = selected_button.y - 16
+    refreshButtonAnim
+    # Wait for a few frames to allow other code to execute
+    pbWait(0.1)  # Adjust the number of frames as needed
+    # Update the src_rect.x instantly
+    @buttons[@index].src_rect.x = 0
+    refreshButtonNames
+    # Update the cursor sprite position instantly
+    @cursor_sprite.y = selected_button.y - 22
+    pbWait(0.05)
   end
 
   def dispose
@@ -308,6 +390,7 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
     @typeBitmap&.dispose
     @megaEvoBitmap&.dispose
     @shiftBitmap&.dispose
+    @cursor_sprite&.dispose
   end
 
   def z=(value)
@@ -317,6 +400,7 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
     @overlay.z     += 5 if @overlay
     @infoOverlay.z += 6 if @infoOverlay
     @typeIcon.z    += 1 if @typeIcon
+    @cursor_sprite.z += 6
   end
 
   def battler=(value)
@@ -329,6 +413,16 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
     oldValue = @shiftMode
     @shiftMode = value
     refreshShiftButton if @shiftMode != oldValue
+  end
+
+  def updateCursorSpritePosition
+    selected_button = @buttons[@index]
+    @cursor_sprite.x = selected_button.x - 10
+    amplitude = 8
+    frequency = 0.1
+    raw_y = selected_button.y + amplitude * Math.sin(@time * frequency)
+    @cursor_sprite.y = raw_y + (2 - raw_y % 2) - 32
+    @time += 1
   end
 
   def refreshButtonNames
@@ -348,7 +442,7 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
     @buttons.each_with_index do |button, i|
       next if !@visibility["button_#{i}"]
       x = button.x - self.x + (button.src_rect.width / 2)
-      y = button.y - self.y + 14
+      y = button.y - self.y + 16 - 8
       moveNameBase = TEXT_BASE_COLOR
       if GET_MOVE_TEXT_COLOR_FROM_MOVE_BUTTON && moves[i].display_type(@battler)
         # NOTE: This takes a color from a particular pixel in the button
@@ -358,7 +452,39 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
         #       code to ensure the font is an appropriate color.
         moveNameBase = button.bitmap.get_pixel(10, button.src_rect.y + 34)
       end
-      textPos.push([moves[i].name, x, y, :center, moveNameBase, TEXT_SHADOW_COLOR])
+      textPos.push([moves[i].name, x, y, :center, Color.new(255,255,255), Color.new(64, 48, 40)])
+    end
+    pbDrawTextPositions(@overlay.bitmap, textPos)
+  end
+
+  def refreshButtonAnim
+    moves = (@battler) ? @battler.moves : []
+    if !USE_GRAPHICS
+      # Fill in command window
+      commands = []
+      [4, moves.length].max.times do |i|
+        commands.push((moves[i]) ? moves[i].name : "-")
+      end
+      @cmdWindow.commands = commands
+      return
+    end
+    # Draw move names onto overlay
+    @overlay.bitmap.clear
+    textPos = []
+    @buttons.each_with_index do |button, i|
+      next if !@visibility["button_#{i}"]
+      x = button.x - self.x + (button.src_rect.width / 2)
+      y = button.y - self.y + 16 + ((i == @index) ? 0 : -8)
+      moveNameBase = TEXT_BASE_COLOR
+      if GET_MOVE_TEXT_COLOR_FROM_MOVE_BUTTON && moves[i].display_type(@battler)
+        # NOTE: This takes a color from a particular pixel in the button
+        #       graphic and makes the move name's base color that same color.
+        #       The pixel is at coordinates 10,34 in the button box. If you
+        #       change the graphic, you may want to change the below line of
+        #       code to ensure the font is an appropriate color.
+        moveNameBase = button.bitmap.get_pixel(10, button.src_rect.y + 34)
+      end
+      textPos.push([moves[i].name, x, y, :center, Color.new(255,255,255), Color.new(64, 48, 40)])
     end
     pbDrawTextPositions(@overlay.bitmap, textPos)
   end
@@ -373,11 +499,10 @@ class Battle::Scene::FightMenu < Battle::Scene::MenuBase
           next
         end
         @visibility["button_#{i}"] = true
-        button.src_rect.x = (i == @index) ? @buttonBitmap.width / 2 : 0
         button.src_rect.y = GameData::Type.get(moves[i].display_type(@battler)).icon_position * BUTTON_HEIGHT
-        button.z          = self.z + ((i == @index) ? 4 : 3)
       end
     end
+    refreshButtonNames
     refreshMoveData(moves[@index])
   end
 

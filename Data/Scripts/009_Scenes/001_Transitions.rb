@@ -89,6 +89,7 @@ module Graphics
     # Graphic transitions
     when "fadetoblack"      then @@transition = Transitions::FadeToBlack.new(duration)
     when "fadefromblack"    then @@transition = Transitions::FadeFromBlack.new(duration)
+    when "vsunown"          then @@transition = Transitions::VSUnown.new(duration)
     else                         ret = false
     end
     Graphics.frame_reset if ret
@@ -121,6 +122,7 @@ module Transitions
       @viewport = Viewport.new(0, 0, Graphics.width, Graphics.height)
       @viewport.z = 99999
       @sprites = []
+      @unown = []
       @overworld_sprite = new_sprite(0, 0, @overworld_bitmap)
       @overworld_sprite.z = -1
       initialize_sprites
@@ -147,6 +149,8 @@ module Transitions
       dispose_all
       @sprites.each { |s| s&.dispose }
       @sprites.clear
+      @unown.each { |s| s&.dispose }
+      @unown.clear
       @overworld_sprite.dispose
       @overworld_bitmap&.dispose
       @viewport&.dispose

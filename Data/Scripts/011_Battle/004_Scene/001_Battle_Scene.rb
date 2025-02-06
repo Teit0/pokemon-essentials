@@ -7,8 +7,8 @@ class Battle::Scene
   USE_ABILITY_SPLASH   = (Settings::MECHANICS_GENERATION >= 5)
   MESSAGE_PAUSE_TIME   = 1.0   # In seconds
   # Text colors
-  MESSAGE_BASE_COLOR   = Color.new(80, 80, 88)
-  MESSAGE_SHADOW_COLOR = Color.new(160, 160, 168)
+  MESSAGE_BASE_COLOR   = MessageConfig::DARK_TEXT_MAIN_COLOR
+  MESSAGE_SHADOW_COLOR = MessageConfig::DARK_TEXT_SHADOW_COLOR
   # The number of party balls to show in each side's lineup.
   NUM_BALLS            = Settings::MAX_PARTY_SIZE
   # Centre bottom of the player's side base graphic
@@ -154,8 +154,8 @@ class Battle::Scene
     # NOTE: If you are not using fancy graphics for the command/fight menus, you
     #       will need to make "messageBox" also visible if the windowtype if
     #       COMMAND_BOX/FIGHT_BOX respectively.
-    @sprites["messageBox"].visible    = (windowType == MESSAGE_BOX)
-    @sprites["messageWindow"].visible = (windowType == MESSAGE_BOX)
+    @sprites["messageBox"].visible    = true #(windowType == MESSAGE_BOX)
+    @sprites["messageWindow"].visible = true #(windowType == MESSAGE_BOX)
     @sprites["commandWindow"].visible = (windowType == COMMAND_BOX)
     @sprites["fightWindow"].visible   = (windowType == FIGHT_BOX)
     @sprites["targetWindow"].visible  = (windowType == TARGET_BOX)

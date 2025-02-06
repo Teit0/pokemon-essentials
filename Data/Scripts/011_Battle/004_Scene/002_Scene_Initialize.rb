@@ -31,10 +31,11 @@ class Battle::Scene
     messageBox.z = 195
     # Create message window (displays the message)
     msgWindow = Window_AdvancedTextPokemon.newWithSize(
-      "", 16, Graphics.height - 96 + 2, Graphics.width - 32, 96, @viewport
+      "", 0, Graphics.height - 96, Graphics.width, 96, @viewport
     )
     msgWindow.z              = 200
-    msgWindow.opacity        = 0
+    msgWindow.opacity        = 255
+    msgWindow.setSkin("Graphics/Windowskins/speech neo 1")
     msgWindow.baseColor      = MESSAGE_BASE_COLOR
     msgWindow.shadowColor    = MESSAGE_SHADOW_COLOR
     msgWindow.letterbyletter = true

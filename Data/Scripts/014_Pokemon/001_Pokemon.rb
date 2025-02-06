@@ -876,7 +876,7 @@ class Pokemon
 
   # @return [String] the name of this Pokémon
   def name
-    return (nicknamed?) ? @name : speciesName
+    return (nicknamed?) ? @name : speciesName.upcase
   end
 
   # @param value [String] the nickname of this Pokémon
