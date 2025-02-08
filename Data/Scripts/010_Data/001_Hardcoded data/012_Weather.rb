@@ -13,7 +13,7 @@ module GameData
     attr_reader :id
     attr_reader :id_number
     attr_reader :real_name
-    attr_reader :category   # :None, :Rain, :Hail, :Sandstorm, :Sun, :Fog
+    attr_reader :category   # :None, :Rain, :Hail, :Sandstorm, :Sun, :Fog, :Confetti!
     attr_reader :graphics   # [[particle file names], [tile file names]]
     attr_reader :particle_delta_x
     attr_reader :particle_delta_y
@@ -162,4 +162,17 @@ GameData::Weather.register({
   :tile_delta_x     => -32,
   :tile_delta_y     => 0,
   :graphics         => [nil, ["fog_tile"]]
+})
+
+GameData::Weather.register({
+  :id               => :Confetti,
+  :id_number        => 9,
+  :category         => :Rain,
+  :graphics         => [["confetti (1)", "confetti (2)", "confetti (3)",
+  "confetti (4)","confetti (5)","confetti (6)","confetti (7)",
+  "confetti (8)","confetti (9)","confetti (10)","confetti (11)",
+  "confetti (12)"
+  ]],
+  :particle_delta_x => -1,
+  :particle_delta_y => 110,
 })

@@ -214,7 +214,11 @@ module RPG
         sprite.bitmap = nil
         return
       end
-      if @weatherTypes[weather_type][0].category == :Rain
+      if @type == :Confetti
+        # Randomly select a bitmap from weatherBitmaps
+        random_index = rand(weatherBitmaps.length)
+        sprite.bitmap = weatherBitmaps[random_index]
+      elsif @weatherTypes[weather_type][0].category == :Rain
         last_index = weatherBitmaps.length - 1   # Last sprite is a splash
         if index.even?
           sprite.bitmap = weatherBitmaps[index % last_index]
@@ -246,7 +250,7 @@ module RPG
         lifetimes[index] = 0
         return
       end
-      if @weatherTypes[weather_type][0].category == :Rain && index.odd?   # Splash
+      if @weatherTypes[weather_type][0].category == :Rain && index.odd? && @type != :Confetti   # Splash
         sprite.x = @ox + @ox_offset - sprite.bitmap.width + rand(Graphics.width + (sprite.bitmap.width * 2))
         sprite.y = @oy + @oy_offset - sprite.bitmap.height + rand(Graphics.height + (sprite.bitmap.height * 2))
         lifetimes[index] = (rand(30...50)) * 0.01   # 0.3-0.5 seconds
@@ -296,6 +300,11 @@ module RPG
           sprite.x += dist_x * (sprite.y - @oy - @oy_offset) / (Graphics.height * 3)   # Faster when further down screen
           sprite.x += [2, 1, 0, -1][rand(4)] * dist_x / 8   # Random movement
           sprite.y += [2, 1, 1, 0, 0, -1][index % 6] * dist_y / 10   # Variety
+        end
+        if weather_type == :Confetti
+          sprite.x += dist_x * (sprite.y - @oy - @oy_offset) / (Graphics.height * 3)
+          sprite.x += [2, 1, 0, -1][rand(4)] * dist_x / 8
+          sprite.y += [2, 1, 1, 0, 0, -1][index % 6] * dist_y / 10
         end
         sprite.x -= Graphics.width if sprite.x - @ox - @ox_offset > Graphics.width
         sprite.x += Graphics.width if sprite.x - @ox - @ox_offset < -sprite.width
@@ -437,7 +446,9 @@ module RPG
             @tiles_wide = (Graphics.width.to_f / w).ceil + 1
             @tiles_tall = (Graphics.height.to_f / h).ceil + 1
             ensureTiles
-            @tiles.each_with_index { |sprite, i| set_tile_bitmap(sprite, i, @target_type) }
+            if @type != :Confetti
+              @tiles.each_with_index { |sprite, i| set_tile_bitmap(sprite, i, @target_type) }
+            end
           else
             @tiles_wide = @tiles_tall = 0
           end
