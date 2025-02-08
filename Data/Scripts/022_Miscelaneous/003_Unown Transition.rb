@@ -12,10 +12,12 @@ module Transitions
       @vs_1_bitmap  = RPG::Cache.transition("hgss_vs1")
       @vs_2_bitmap  = RPG::Cache.transition("hgss_vs2")
 
-      # Use variable 33 for the Pokémon's species ID
-      species_id = $game_variables[33]
-      @foe_bitmap = RPG::Cache.load_bitmap("Graphics/Pokemon/Front/", species_id.to_s)
-
+      pokemon = $game_variables[33]
+      name_string = pokemon.speciesName.upcase
+      temp = AutoMosaicPokemonSprite.new(nil)
+      temp.setPokemonBitmap(pokemon)
+      @foe_bitmap = temp.bitmap
+      #print("Graphics/Pokemon/Front/"+pokemon.speciesName.upcase) # fuck this omg why did I even try
       @black_bitmap = RPG::Cache.transition("black_half")
       dispose if !@bar_bitmap || !@vs_1_bitmap || !@vs_2_bitmap || !@foe_bitmap || !@black_bitmap
     end
@@ -63,13 +65,13 @@ module Transitions
                                @foe_bitmap, @foe_bitmap.width / 2, @foe_bitmap.height)
 
 
-      pokemon_data = $game_variables[33]
+      pokemon = $game_variables[33]
       @foe_sprite = new_sprite(Graphics.width + @foe_bitmap.width, @sprites[0].y + @sprites[0].height+12,
                                  @foe_bitmap, @foe_bitmap.width / 2, @foe_bitmap.height)
 
         # Create a Pokémon object from the species ID in variable 33
         species_id = $game_variables[33]
-        pokemon_data = Pokemon.new(species_id, 50) # Level 50
+        pokemon_data = pokemon
 
         @foe_sprite = AutoMosaicPokemonSprite.new(@foe_sprite.viewport)
         @foe_sprite.setPokemonBitmap(pokemon_data)
