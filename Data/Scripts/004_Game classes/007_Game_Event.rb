@@ -24,6 +24,7 @@ class Game_Event < Game_Character
     @through      = true
     @to_update    = true
     @tempSwitches = {}
+    @time         = 0
     moveto(@event.x, @event.y) if map
     refresh
   end
@@ -271,6 +272,8 @@ class Game_Event < Game_Character
     return true
   end
 
+
+  SPECIAL_NAMES = ["Elves", "Birds", "Pokemon 12"]
   def update
     @to_update = should_update?(true)
     @updated_last_frame = false
@@ -278,6 +281,55 @@ class Game_Event < Game_Character
     @updated_last_frame = true
     @moveto_happened = false
     last_moving = moving?
+    if @character_name.match?(/\b(Unown|Mew|u[a-z!¿])\b/i) || SPECIAL_NAMES.any? { |name| @character_name.casecmp(name).zero? } # If Mew/Unown/uX is in the character sheet name
+      @time += 1
+      amplitude = 15
+      frequency = 0.075
+      speed_factor = 0.7
+      if @character_name == "Birds"
+        amplitude = 12
+        frequency = 0.05
+      end
+      phase_offset = @event.name.to_i * 8 # Uses event name (meant to be just numbers like 5) to offset, so I can make them neat
+      speed = 1 - Math.sin((@time + phase_offset) * frequency * 0.5) * speed_factor
+      if @character_name == "Birds" # Ho-Ho and Luigi
+        min_speed = 1 - speed_factor
+        max_speed = 1 + speed_factor
+        norm = ((max_speed - speed).to_f) / (max_speed - min_speed)
+        horiz_scale = 0.9 + (0.3 * norm)
+        vert_scale  = 1.2 - (0.2 * norm)
+        if $scene && $scene.is_a?(Scene_Map) &&
+           $scene.respond_to?(:spriteset) && $scene.spriteset &&
+           $scene.spriteset.respond_to?(:character_sprites)
+           sprite = $scene.spriteset.character_sprites[@event.id - 1]
+           if sprite && sprite.respond_to?(:zoom_x)
+             sprite.zoom_x = horiz_scale
+             sprite.zoom_y = vert_scale
+           end
+        end
+
+        @dust_frequency ||= 60.0 / 30  # Adjust this to change how many times per second the dust animation plays
+        dust_interval = (Graphics.respond_to?(:frame_rate) ? Graphics.frame_rate : 60) / @dust_frequency
+
+        @dust_timer ||= 0
+        @dust_timer += 1
+
+        if @dust_timer >= dust_interval
+         if $scene && $scene.is_a?(Scene_Map) && $scene.respond_to?(:spriteset) && $scene.spriteset
+           spriteset = $scene.spriteset
+           spriteset&.addUserAnimation(Settings::DUST_ANIMATION_ID, self.x, self.y, true, 1)
+         end
+         @dust_timer = 0
+        end
+
+      end
+      raw_y_offset = (-amplitude * speed).round
+      @y_offset = raw_y_offset + (2 - raw_y_offset % 2)
+
+
+
+    end
+
     super
     check_event_trigger_after_moving if !moving? && last_moving
     if @need_refresh
